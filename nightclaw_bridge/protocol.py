@@ -2,17 +2,13 @@
 from __future__ import annotations
 from typing import Any, Mapping
 
-# G2 FIX: full NightClaw tier set, including T5/T7/T8/T9 and half-steps.
+# ALLOWED_TIERS lives in nightclaw_common.tiers as the single source of truth
+# both the engine (telemetry emitter) and the bridge (validator) agree on.
+# Worker tiers: T0..T9 with half-steps (T1.5, T2.5, T2.7, T3.5, T5.5, T8.3, T8.5)
+# and T7a..T7d substeps, plus "startup" for pre-T0 startup-gate commands.
 # Sourced from orchestration-os/CRON-WORKER-PROMPT.md and CRON-MANAGER-PROMPT.md.
-# Worker tiers: T0, T1, T1.5, T2, T2.5, T2.7, T3, T3.5, T4, T5, T5.5, T6, T7, T7a-T7d, T8, T8.3, T8.5, T9
-# Rejecting a valid tier here silently drops telemetry events that the bridge
-# would otherwise broadcast to the monitor — which is how the gap hid.
-ALLOWED_TIERS = {
-    "startup",
-    "T0", "T1", "T1.5", "T2", "T2.5", "T2.7", "T3", "T3.5", "T4",
-    "T5", "T5.5", "T6", "T7", "T7a", "T7b", "T7c", "T7d",
-    "T8", "T8.3", "T8.5", "T9",
-}
+# Re-exported here for back-compat with external code that imports from this module.
+from nightclaw_common.tiers import ALLOWED_TIERS  # noqa: E402,F401
 
 def build_opsstepevent(*, run_id: str, tier: str, cmd: str, t_emitted: str,
                        slug: str | None = None, pid: int | None = None,

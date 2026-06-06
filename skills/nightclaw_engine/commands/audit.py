@@ -690,4 +690,114 @@ def cmd_os_file_sizes():
         print("RESULT:OK")
 
 
-__all__ = ["cmd_timing_check", "cmd_crash_detect", "cmd_transition_expiry", "cmd_change_detect", "cmd_audit_spine", "cmd_audit_anomalies", "cmd_prune_candidates", "cmd_t7_dedup", "cmd_crash_context", "cmd_os_file_sizes"]
+
+def cmd_crash_recover():
+    """Recover a dead-holder lock based on crash evidence (not just timestamp).
+
+    Senior-engineer rationale: ``check-lock.py`` declares a lock stale when
+    ``locked_at`` is older than 25 minutes. That works for typical worker
+    cadences (3h+) but means a crash followed by a manual retrigger within
+    25 minutes silently defers. ``crash-recover`` runs FIRST in T0 (before
+    ``check-lock.py``) and releases the lock immediately if the audit log
+    proves the holder is dead, with a much shorter elapsed-time floor.
+
+    Recovery criteria — ALL must be true:
+      * ``LOCK.md`` has ``status: locked``.
+      * The lock's ``run_id`` appears in ``audit/AUDIT-LOG.md`` with a T1+
+        entry AND has no matching entry in ``audit/SESSION-REGISTRY.md``
+        (= a crashed run, per crash-detect).
+      * The lock's ``locked_at`` is at least RECOVER_MIN_MINUTES old
+        (default 10) — prevents aggressive recovery while a still-living
+        session is mid-T4.
+
+    On recovery: writes the released schema to ``LOCK.md`` and emits
+    ``RECOVERED:<run_id>:elapsed_minutes=N``. Does NOT append to AUDIT-LOG
+    or NOTIFICATIONS — the cron prompt does that after consuming the output.
+
+    Output (one line):
+      RECOVERED:<run_id>:elapsed_minutes=N
+      NO_RECOVERY:reason=lock_released
+      NO_RECOVERY:reason=lock_too_fresh:elapsed_minutes=N
+      NO_RECOVERY:reason=holder_did_not_start_past_T0:run_id=X
+      NO_RECOVERY:reason=holder_completed_but_lock_held:run_id=X
+      NO_RECOVERY:reason=no_lock_file
+      NO_RECOVERY:reason=holder_unknown
+      NO_RECOVERY:reason=locked_at_unparseable
+    """
+    # Floor for "lock is dead, not just slow." Set to 10 minutes because a
+    # healthy worker pass reaches T4 (CHECKPOINT in audit log) well within
+    # 5 minutes; if a session started, wrote T1+ entries, and is now > 10
+    # minutes past locked_at without a T9 in SESSION-REGISTRY, the holder
+    # is definitely not coming back. Smaller windows risk racing a still-
+    # running T4 that is taking longer than usual; larger windows leave
+    # dead locks on the floor for the next pass to discover via the
+    # 25-minute timestamp-only fallback in check-lock.py.
+    RECOVER_MIN_MINUTES = 10
+
+    lock_path = _shared.ROOT / "LOCK.md"
+    if not lock_path.exists():
+        print("NO_RECOVERY:reason=no_lock_file")
+        sys.exit(0)
+
+    lock_text = lock_path.read_text(encoding="utf-8", errors="replace")
+    lock_fields = {}
+    for line in lock_text.splitlines():
+        m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+)$", line.strip())
+        if m:
+            lock_fields[m.group(1)] = m.group(2).strip()
+
+    if lock_fields.get("status") != "locked":
+        print("NO_RECOVERY:reason=lock_released")
+        sys.exit(0)
+
+    holder_run_id = lock_fields.get("run_id", "").strip()
+    locked_at = lock_fields.get("locked_at", "").strip()
+    if not holder_run_id or holder_run_id in ("\u2014", "-", "~"):
+        print("NO_RECOVERY:reason=holder_unknown")
+        sys.exit(0)
+
+    try:
+        lock_dt = datetime.fromisoformat(locked_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        print("NO_RECOVERY:reason=locked_at_unparseable")
+        sys.exit(0)
+    now = datetime.now(timezone.utc)
+    elapsed_minutes = int((now - lock_dt).total_seconds() // 60)
+    if elapsed_minutes < RECOVER_MIN_MINUTES:
+        print(f"NO_RECOVERY:reason=lock_too_fresh:elapsed_minutes={elapsed_minutes}")
+        sys.exit(0)
+
+    registry = _shared.read_file("audit/SESSION-REGISTRY.md") or ""
+    audit_log = _shared.read_file("audit/AUDIT-LOG.md") or ""
+
+    started = False
+    for line in audit_log.splitlines():
+        if re.search(rf"TASK:{re.escape(holder_run_id)}\.(T[1-9]|T0\.[1-9])", line):
+            started = True
+            break
+    if not started:
+        print(f"NO_RECOVERY:reason=holder_did_not_start_past_T0:run_id={holder_run_id}")
+        sys.exit(0)
+
+    if holder_run_id in registry:
+        print(f"NO_RECOVERY:reason=holder_completed_but_lock_held:run_id={holder_run_id}")
+        sys.exit(0)
+
+    released_body = (
+        "# LOCK\n\n"
+        "```yaml\n"
+        "status: released\n"
+        "holder: \u2014\n"
+        "run_id: \u2014\n"
+        "locked_at: \u2014\n"
+        "expires_at: \u2014\n"
+        "consecutive_pass_failures: 0\n"
+        "```\n"
+    )
+    lock_path.write_text(released_body, encoding="utf-8")
+    print(f"RECOVERED:{holder_run_id}:elapsed_minutes={elapsed_minutes}")
+    sys.exit(0)
+
+
+
+__all__ = ["cmd_timing_check", "cmd_crash_detect", "cmd_transition_expiry", "cmd_change_detect", "cmd_audit_spine", "cmd_audit_anomalies", "cmd_prune_candidates", "cmd_t7_dedup", "cmd_crash_context", "cmd_os_file_sizes", "cmd_crash_recover"]

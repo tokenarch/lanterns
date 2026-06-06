@@ -135,8 +135,8 @@ STEP_CMD_MAP = {
     # It is tagged "startup" so telemetry events (when invoked via the CLI
     # dispatcher) carry a tier the bridge accepts. If a future change adds
     # a dedicated "tooling" tier to ALLOWED_TIERS, "replay" should move
-    # there. See nightclaw_bridge/protocol.py ALLOWED_TIERS for the set
-    # the bridge will accept.
+    # there. See nightclaw_common/tiers.py ALLOWED_TIERS for the set
+    # both engine and bridge agree on.
     "replay": "startup",
 }
 

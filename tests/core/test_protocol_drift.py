@@ -126,13 +126,13 @@ def test_step_cmd_map_tiers_are_in_allowed_tiers():
     drift is caught at CI time too.
     """
     from nightclaw_engine.commands import STEP_CMD_MAP
-    from nightclaw_bridge.protocol import ALLOWED_TIERS
+    from nightclaw_common.tiers import ALLOWED_TIERS
     step_tiers = set(STEP_CMD_MAP.values())
     bridge_tiers = set(ALLOWED_TIERS)
     missing = sorted(step_tiers - bridge_tiers)
     assert not missing, (
         f"STEP_CMD_MAP uses tier(s) {missing} that are not in "
-        f"nightclaw_bridge.protocol.ALLOWED_TIERS. Bridge will drop these "
+        f"nightclaw_common.tiers.ALLOWED_TIERS (re-exported via nightclaw_bridge.protocol). Bridge will drop these "
         f"telemetry events silently."
     )
 

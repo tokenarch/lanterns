@@ -50,6 +50,9 @@ from . import audit as _audit
 from . import bundle as _bundle
 from . import bootstrap as _bootstrap
 from . import model_tier as _model_tier
+from . import preflight as _preflight
+from . import syntax as _syntax
+from . import replay as _replay
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +67,7 @@ COMMANDS = {
     "scan-notifications":  _dispatch.cmd_scan_notifications,
     "timing-check":        _audit.cmd_timing_check,
     "crash-detect":        _audit.cmd_crash_detect,
+    "crash-recover":       _audit.cmd_crash_recover,
     "transition-expiry":   _audit.cmd_transition_expiry,
     "change-detect":       _audit.cmd_change_detect,
     "audit-spine":         _audit.cmd_audit_spine,
@@ -96,6 +100,10 @@ COMMANDS = {
     "bootstrap":           _bootstrap.cmd_bootstrap,
     # Pass 11 — Model tier switching
     "set-model-tier":      _model_tier.cmd_set_model_tier,
+    # Pass 12 — pre-flight import gate (catches NTFS truncation + stale code regressions)
+    "preflight-import":    _preflight.cmd_preflight_import,
+    "syntax-check":        _syntax.cmd_syntax_check,
+    "replay":              _replay.cmd_replay,
 }
 
 
@@ -105,7 +113,7 @@ STEP_CMD_MAP = {
     "integrity-check": "startup", "next-run-id": "startup",
     "dispatch": "T1", "scan-notifications": "T1", "idle-triage": "T1",
     "longrunner-extract": "T2", "transition-expiry": "T2", "dispatch-validate": "T2",
-    "crash-detect": "T0", "crash-context": "T0", "timing-check": "T0",
+    "crash-detect": "T0", "crash-context": "T0", "crash-recover": "startup", "timing-check": "T0",
     "change-detect": "T3", "strategic-context": "T3",
     "bundle-exec": "T6", "append": "T6", "append-batch": "T6",
     "audit-spine": "T8", "audit-anomalies": "T8", "scr-verify": "T8",
@@ -120,6 +128,16 @@ STEP_CMD_MAP = {
     "bootstrap": "T0",
     # Pass 11
     "set-model-tier": "T9",
+    # Pass 12 — pre-flight import gate
+    "preflight-import": "startup",
+    "syntax-check": "startup",
+    # "replay" is an operator-invoked debug command, not part of any T-step.
+    # It is tagged "startup" so telemetry events (when invoked via the CLI
+    # dispatcher) carry a tier the bridge accepts. If a future change adds
+    # a dedicated "tooling" tier to ALLOWED_TIERS, "replay" should move
+    # there. See nightclaw_common/tiers.py ALLOWED_TIERS for the set
+    # both engine and bridge agree on.
+    "replay": "startup",
 }
 
 
