@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NightClaw Sessions v11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-mono:'JetBrains Mono',Fira Mono,monospace;
+  --font-ui:Inter,system-ui,sans-serif;
+  --text-xs:0.6875rem;--text-sm:0.75rem;--text-base:0.8125rem;
+  --space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;
+  --radius-sm:3px;--radius-md:5px;
+}
+[data-theme="dark"]{
+  --bg:#0f0f0e;--surface:#161614;--surface-2:#1c1b19;--surface-3:#222120;
+  --border:rgba(255,255,255,0.08);--border-hi:rgba(255,255,255,0.14);
+  --text:#c8c6c2;--text-muted:#6e6c69;--text-faint:#3a3937;
+  --accent:#3d9e8c;--accent-hi:#4fb8a3;
+  --ok:#4a9e5c;--ok-dim:rgba(74,158,92,0.15);
+  --warn:#c8893a;--warn-dim:rgba(200,137,58,0.15);
+  --err:#b85b5b;--err-dim:rgba(184,91,91,0.15);
+  --info:#5b87b8;--info-dim:rgba(91,135,184,0.15);
+}
+[data-theme="light"]{
+  --bg:#f5f4f0;--surface:#ffffff;--surface-2:#f9f8f5;--surface-3:#f0ede8;
+  --border:rgba(0,0,0,0.09);--border-hi:rgba(0,0,0,0.15);
+  --text:#1e1c19;--text-muted:#7a7874;--text-faint:#bab8b4;
+  --accent:#0a7a6a;--accent-hi:#0d9a84;
+  --ok:#2d7a3a;--ok-dim:rgba(45,122,58,0.1);
+  --warn:#a06820;--warn-dim:rgba(160,104,32,0.1);
+  --err:#943030;--err-dim:rgba(148,48,48,0.1);
+  --info:#2d5f96;--info-dim:rgba(45,95,150,0.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-ui);font-size:var(--text-base);background:var(--bg);
+  color:var(--text);line-height:1.5;height:100vh;display:flex;flex-direction:column}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+/* Topbar */
+.topbar{display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-4);
+  height:40px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.topbar-logo{display:flex;align-items:center;gap:var(--space-2);font-family:var(--font-mono);
+  font-size:var(--text-sm);font-weight:600;letter-spacing:.04em}
+.topbar-logo svg{color:#3d9e8c}
+.topbar-sep{flex:1}
+.conn-indicator{display:flex;align-items:center;gap:6px;font-size:var(--text-xs);
+  font-family:var(--font-mono);color:var(--text-muted)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--err)}
+.conn-dot.live{background:var(--ok)}
+.conn-dot.connecting{background:var(--warn);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.port-badge{padding:2px 8px;border-radius:var(--radius-sm);font-size:var(--text-xs);
+  font-family:var(--font-mono);background:var(--surface-3);
+  border:1px solid var(--border);color:var(--text-muted)}
+.auth-badge{padding:2px 8px;border-radius:var(--radius-sm);font-size:var(--text-xs);
+  font-family:var(--font-mono);background:var(--surface-3);
+  border:1px solid var(--border);color:var(--text-faint)}
+.auth-badge.rw{background:var(--ok-dim);color:var(--ok);border-color:rgba(74,158,92,0.3)}
+.auth-badge.ro{background:var(--info-dim);color:var(--info);border-color:rgba(91,135,184,0.3)}
+/* SCR summary bar */
+.scr-bar{display:flex;align-items:center;gap:var(--space-2);padding:5px var(--space-4);
+  border-bottom:1px solid var(--border);background:var(--surface);
+  font-size:var(--text-xs);font-family:var(--font-mono);color:var(--text-muted);
+  min-height:28px;flex-shrink:0;display:none}
+.scr-bar.visible{display:flex}
+.scr-label{color:var(--text-faint)}
+.scr-pass{color:var(--ok)}
+.scr-fail{color:var(--err)}
+.theme-btn{width:28px;height:28px;display:flex;align-items:center;
+  justify-content:center;border-radius:var(--radius-sm);color:var(--text-muted)}
+.theme-btn:hover{background:var(--surface-3)}
+.controls{display:flex;align-items:center;gap:var(--space-2);padding:8px var(--space-4);
+  border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.control-label{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted)}
+.control-select,.control-btn{height:28px;border-radius:var(--radius-sm);border:1px solid var(--border-hi);
+  background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:var(--text-xs)}
+.control-select{padding:0 8px;min-width:220px}
+.control-btn{padding:0 10px}
+.control-btn:hover{background:var(--surface-3)}
+.open-btn{height:24px;padding:0 8px;border-radius:var(--radius-sm);border:1px solid rgba(61,158,140,.3);background:rgba(61,158,140,.12);color:var(--accent);font-family:var(--font-mono);font-size:10px}
+.open-btn:hover{background:rgba(61,158,140,.2)}
+/* Table */
+.sessions-wrap{flex:1;overflow:hidden;padding:var(--space-3);display:grid;grid-template-columns:minmax(620px,1.65fr) minmax(260px,.85fr);gap:var(--space-3);align-items:start}
+.sessions-main,.detail-pane{min-width:0}
+.sessions-main{min-height:0;overflow:auto;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-md)}
+.sessions-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.sessions-table th{font-family:var(--font-mono);font-size:var(--text-xs);
+  color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;
+  padding:4px var(--space-3);border-bottom:1px solid var(--border);
+  text-align:left;position:sticky;top:0;background:var(--bg);z-index:1}
+.sessions-table td{padding:5px var(--space-3);border-bottom:1px solid var(--border);
+  font-size:var(--text-xs);font-family:var(--font-mono);vertical-align:top}
+.sessions-table th:nth-child(1), .sessions-table td:nth-child(1){width:104px}
+.sessions-table th:nth-child(2), .sessions-table td:nth-child(2){width:86px}
+.sessions-table th:nth-child(3), .sessions-table td:nth-child(3){width:144px}
+.sessions-table th:nth-child(4), .sessions-table td:nth-child(4){width:180px}
+.sessions-table th:nth-child(5), .sessions-table td:nth-child(5){width:120px}
+.sessions-table th:nth-child(6), .sessions-table td:nth-child(6){width:136px}
+.sessions-table th:nth-child(7), .sessions-table td:nth-child(7){width:128px}
+.sessions-table th:nth-child(8), .sessions-table td:nth-child(8){width:116px}
+.sessions-table th:nth-child(9), .sessions-table td:nth-child(9){width:66px}
+.sessions-table tr:hover td{background:var(--surface-2)}
+.sessions-table tbody tr{cursor:pointer}
+.run-id-cell{color:var(--accent);cursor:pointer;user-select:none;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+.run-id-cell:hover{color:var(--accent-hi);text-decoration:underline}
+.agent-badge{padding:1px 6px;border-radius:var(--radius-sm);font-size:10px}
+.agent-worker{background:var(--info-dim);color:var(--info);
+  border:1px solid rgba(91,135,184,0.25)}
+.agent-manager{background:var(--warn-dim);color:var(--warn);
+  border:1px solid rgba(200,137,58,0.25)}
+/* Outcome */
+.outcome-cell{display:inline-flex;align-items:center;gap:5px}
+.outcome-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.outcome-clean    .outcome-dot{background:var(--ok)}
+.outcome-crash    .outcome-dot{background:var(--err)}
+.outcome-completed_no_t9 .outcome-dot{background:var(--warn)}
+.outcome-lock_error .outcome-dot{background:var(--warn)}
+.outcome-running  .outcome-dot{background:var(--info)}
+/* Timeline bar */
+.timeline-cell{min-width:180px;max-width:280px;padding-top:7px!important}
+.bar-wrap{position:relative;height:10px;background:var(--surface-2);
+  border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:var(--radius-sm);transition:width .4s}
+.bar-clean    {background:var(--ok)}
+.bar-crash    {background:var(--err)}
+.bar-completed_no_t9{background:var(--warn)}
+.bar-lock_error{background:var(--warn)}
+.bar-running  {background:var(--info);animation:pulse 2s ease-in-out infinite}
+.mut-badge{padding:1px 5px;border-radius:var(--radius-sm);background:var(--surface-3);
+  border:1px solid var(--border);font-size:10px;color:var(--text-faint)}
+.signal-stack{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.signal-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:999px;border:1px solid var(--border);font-size:10px;font-family:var(--font-mono);white-space:nowrap}
+.signal-pill.good{background:var(--ok-dim);color:var(--ok);border-color:rgba(74,158,92,.28)}
+.signal-pill.warn{background:var(--warn-dim);color:var(--warn);border-color:rgba(200,137,58,.28)}
+.signal-pill.bad{background:var(--err-dim);color:var(--err);border-color:rgba(184,91,91,.28)}
+.signal-pill.info{background:var(--info-dim);color:var(--info);border-color:rgba(91,135,184,.28)}
+.signal-pill.dim{background:var(--surface-3);color:var(--text-faint);border-color:var(--border)}
+.project-badge{display:inline-block;max-width:100%;padding:1px 6px;border-radius:var(--radius-sm);font-size:10px;
+  border:1px solid rgba(61,158,140,.25);background:rgba(61,158,140,.12);color:var(--accent);white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+.session-row-selected td{background:rgba(61,158,140,.14)!important}
+.session-row-selected .run-id-cell{color:var(--accent-hi);font-weight:600}
+/* Expanded step list */
+.step-expand{display:none;border-top:1px solid var(--border);
+  padding:4px var(--space-2);font-size:10px;color:var(--text-muted);line-height:1.7;
+  background:var(--surface-2)}
+.step-expand.open{display:block}
+.step-ts-row{display:flex;gap:var(--space-3);padding:1px 0}
+.step-ts-key{color:var(--accent);min-width:56px;flex-shrink:0}
+/* Empty / loading */
+.empty-msg,.loading-msg{text-align:center;font-family:var(--font-mono);
+  font-size:var(--text-xs);padding:var(--space-4) 0}
+.empty-msg{color:var(--text-faint)}
+.loading-msg{color:var(--text-muted)}
+.detail-pane{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-md);display:flex;flex-direction:column;min-height:320px;max-height:100%;overflow:hidden;position:sticky;top:0}
+.detail-head{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.detail-title{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:.05em;color:var(--text-muted);text-transform:uppercase}
+.detail-meta{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-faint)}
+.detail-scope{display:inline-flex;width:max-content;margin-top:4px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.detail-scope.project{color:var(--accent);border-color:rgba(61,158,140,.3);background:rgba(61,158,140,.12)}
+.detail-scope.run{color:var(--info);border-color:rgba(91,135,184,.3);background:var(--info-dim)}
+.detail-scope.live{color:var(--warn);border-color:rgba(200,137,58,.3);background:var(--warn-dim)}
+.detail-body{padding:10px 12px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.debug-log{padding:8px 12px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text-faint);background:var(--surface-2);max-height:120px;overflow:auto;white-space:pre-wrap}
+.audit-group{display:flex;flex-direction:column;gap:6px}
+.audit-group-title{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.audit-list{display:flex;flex-direction:column;gap:6px}
+.audit-item{padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.audit-item.good{border-color:rgba(74,158,92,.28);background:var(--ok-dim)}
+.audit-item.warn{border-color:rgba(200,137,58,.28);background:var(--warn-dim)}
+.audit-item.bad{border-color:rgba(184,91,91,.28);background:var(--err-dim)}
+.audit-item.info{border-color:rgba(91,135,184,.28);background:var(--info-dim)}
+.audit-item-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;font-family:var(--font-mono);font-size:10px;color:var(--text-faint)}
+.audit-item-title{color:var(--text)}
+.audit-item-body{margin-top:4px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);white-space:pre-wrap;word-break:break-word}
+.session-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.session-fact{padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.session-fact-label{font-family:var(--font-mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
+.session-fact-value{margin-top:3px;font-family:var(--font-mono);font-size:11px;color:var(--text);overflow-wrap:anywhere}
+.session-legend{font-size:11px;color:var(--text-muted);line-height:1.5}
+.session-legend strong{color:var(--text)}
+@media (max-width: 1160px){
+  .sessions-wrap{grid-template-columns:minmax(0,1fr);overflow-y:auto}
+  .sessions-main{overflow:auto}
+  .detail-pane{position:static;max-height:none}
+}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8c0 2.55 1.44 4.77 3.56 5.89C4.75 12.87 4.5 11.47 4.5 10c0-3.04 1.68-5.67 4.14-7.07A6.48 6.48 0 0 0 8 1.5z" fill="currentColor" opacity=".6"/>
+      <path d="M8 2.5C5 2.5 2.5 5 2.5 8s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5S11 2.5 8 2.5zm0 9.5c-2.21 0-4-1.79-4-4 0-.97.35-1.86.92-2.56C6.1 7.2 7 9.36 8.6 10.8c.45.4.94.72 1.46.97C9.5 11.88 8.77 12 8 12z" fill="currentColor"/>
+    </svg>
+    NIGHTCLAW SESSIONS v11
+  </div>
+  <span id="port-badge" class="port-badge">port:—</span>
+  <span id="auth-badge" class="auth-badge">AUTH: NONE</span>
+  <span class="topbar-sep"></span>
+  <div class="conn-indicator">
+    <div id="conn-dot" class="conn-dot connecting"></div>
+    <span id="conn-label">CONNECTING</span>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+</header>
+<div id="scr-bar" class="scr-bar">
+  <span class="scr-label">SCR LAST:</span>
+  <span id="scr-pass" class="scr-pass"></span>
+  <span id="scr-fail" class="scr-fail"></span>
+  <span id="scr-ts" style="color:var(--text-faint)"></span>
+</div>
+<div class="controls">
+  <span class="control-label">Project</span>
+  <select id="project-filter" class="control-select">
+    <option value="">All projects</option>
+  </select>
+  <button class="control-btn" onclick="clearProjectFilter()">clear</button>
+</div>
+<div class="sessions-wrap">
+  <div class="sessions-main">
+    <div id="sessions-body"><div class="loading-msg">Connecting to bridge…</div></div>
+  </div>
+  <aside class="detail-pane">
+    <div class="detail-head">
+      <div id="detail-title" class="detail-title">Audit detail</div>
+      <div id="detail-meta" class="detail-meta">Select a run or project filter to inspect related audit history.</div>
+      <div id="detail-scope" class="detail-scope">no scope selected</div>
+    </div>
+    <div id="detail-body" class="detail-body">
+      <div class="empty-msg">No audit detail selected yet.</div>
+    </div>
+    <div id="debug-log" class="debug-log">debug: ready</div>
+  </aside>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const PORT = params.get('port') || 8787;
+const bootstrapToken = params.get('token') || '';
+const WS_URL = `ws://127.0.0.1:${PORT}/sessions`;
+document.getElementById('port-badge').textContent = `port ${PORT}`;
+
+let theme = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+document.documentElement.setAttribute('data-theme', theme);
+function toggleTheme(){ theme = theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', theme); }
+function setConn(s){ document.getElementById('conn-dot').className = 'conn-dot ' + s; document.getElementById('conn-label').textContent = s==='live' ? 'LIVE' : s==='connecting' ? 'CONNECTING' : 'DISCONNECTED'; }
+function setAuthBadge(priv){ const p = (priv || 'none').toLowerCase(); const el = document.getElementById('auth-badge'); if(!el) return; el.className = 'auth-badge ' + p; el.textContent = p==='rw' ? 'AUTH: RW' : p==='ro' ? 'AUTH: RO' : 'AUTH: NONE'; }
+function fmtTs(ts){ if(!ts) return ''; try{ const d=new Date(ts); return d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch{return ts;} }
+function fmtDate(ts){ if(!ts) return ''; try{ const d=new Date(ts); return d.toLocaleDateString('en-US',{month:'short',day:'2-digit'});}catch{return ts;} }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function outcomeLabel(outcome){ return outcome === 'completed_no_t9' ? 'completed (no T9 record)' : outcome; }
+function outcomeTone(outcome){ const o=String(outcome||'').toLowerCase(); if(o==='clean') return 'good'; if(o==='crash') return 'bad'; if(o==='running') return 'info'; if(o==='completed_no_t9' || o==='lock_error') return 'warn'; return 'dim'; }
+function sourceTone(source){ const s=String(source||'').toLowerCase(); if(s.includes('artifact') || s.includes('audit_session_close') || s.includes('telemetry_t9')) return 'good'; if(s.includes('inferred') || s.includes('reconstruct') || s.includes('registry')) return 'warn'; if(!s || s==='unknown' || s==='none') return 'dim'; return 'info'; }
+function fmtTokenCount(n){ if(n===null||n===undefined||n==='') return ''; const num=Number(n); if(!Number.isFinite(num)) return String(n); if(Math.abs(num)>=1000000) return (num/1000000).toFixed(2).replace(/\.00$/,'')+'M'; if(Math.abs(num)>=1000) return (num/1000).toFixed(num>=10000?0:1).replace(/\.0$/,'')+'k'; return String(num); }
+function fmtCost(v){ if(v===null||v===undefined||v==='') return ''; const n=Number(v); return Number.isFinite(n) ? '$'+n.toFixed(4) : String(v); }
+function sessionUsage(s){ const usage=(s&&s.token_usage)||{}; return { text:(s&&s.tokens)||usage.text||'', input:((s&&s.input_tokens)??usage.input_tokens), output:((s&&s.output_tokens)??usage.output_tokens), total:((s&&s.total_tokens)??usage.total_tokens), cost:((s&&s.cost_usd)??usage.cost_usd) }; }
+function accountingLabel(s){ const u=sessionUsage(s||{}); const bits=[]; if(u.total) bits.push(fmtTokenCount(u.total)); else if(u.text) bits.push(u.text); if(u.cost!==null&&u.cost!==undefined&&u.cost!=='') bits.push(fmtCost(u.cost)); return bits.length ? bits.join(' · ') : 'not recorded'; }
+function provenanceLabel(s){ const p=(s&&s.provenance)||{}; const row=p.row||'unknown'; const outcome=p.outcome||'unknown'; const project=p.project_slug||'unknown'; return { row, outcome, project, text:`row=${row} · outcome=${outcome} · project=${project}` }; }
+function sessionForRun(runId){ return (state.sessions||[]).map(normalizeSession).find(s=>sessionRunId(s)===runId) || {}; }
+function mergeSessionPayload(payload){ const rid=(payload&&payload.run_id)||state.selectedRunId||''; const row=sessionForRun(rid); const session=(payload&&payload.session)||{}; return {...row, ...session, ...(payload||{}), provenance:{...(row.provenance||{}), ...((payload&&payload.provenance)||{})}}; }
+function signalPill(label, tone='dim', title=''){ return `<span class="signal-pill ${escHtml(tone)}" title="${escHtml(title)}">${escHtml(label)}</span>`; }
+function sourceExplanation(source){ const s=String(source||'').toLowerCase(); if(s.includes('artifact')) return 'from session_close artifact'; if(s.includes('audit_session_close')) return 'from AUDIT-LOG session close'; if(s.includes('telemetry')) return 'from live bridge telemetry'; if(s.includes('registry')) return 'from SESSION-REGISTRY'; if(s.includes('inferred')) return 'inferred from summary/artifact text'; if(s==='unknown') return 'not recorded by source'; return source || 'not recorded'; }
+const state = { sessions: [], stepTimes: {}, sessionReplays: {}, selectedProject: '', selectedRunId: '', currentDetailMode: 'none' };
+let replayTimer = null;
+function debugLog(line){
+  const el = document.getElementById('debug-log');
+  if(!el) return;
+  const ts = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.textContent = `${ts} ${line}\n` + el.textContent.split('\n').slice(0,11).join('\n');
+}
+function computeBarPct(session, stepTimes, allSessions){ const rid=session.runid; const steps=(stepTimes[rid]||[]).length; let maxSteps=1; allSessions.forEach(s=>{ const n=(stepTimes[s.runid]||[]).length; if(n>maxSteps) maxSteps=n;}); return maxSteps>0 ? Math.max(5, Math.round((steps/maxSteps)*100)) : 5; }
+function buildStepExpand(runId, stepTimes){ const times=stepTimes[runId]||[]; if(!times.length) return '<div style="color:var(--text-faint)">No step timestamps available.</div>'; return times.map((ts,i)=>`<div class="step-ts-row"><span class="step-ts-key">step ${i+1}</span><span>${escHtml(ts)}</span></div>`).join(''); }
+function toggleExpand(runId){ const el=document.getElementById('expand-'+runId); if(el) el.classList.toggle('open'); }
+function showMessage(msg, cls='loading-msg'){ document.getElementById('sessions-body').innerHTML = `<div class="${cls}">${escHtml(msg)}</div>`; }
+function setDetail(title, meta, html, scope=''){
+  const t=document.getElementById('detail-title');
+  const m=document.getElementById('detail-meta');
+  const b=document.getElementById('detail-body');
+  const s=document.getElementById('detail-scope');
+  if(t) t.textContent = title;
+  if(m) m.textContent = meta;
+  if(b) b.innerHTML = html;
+  if(s){
+    const label = scope || (state.currentDetailMode === 'run' ? 'RUN-SCOPED REPLAY' : state.currentDetailMode === 'project' ? 'PROJECT-SCOPED HISTORY' : 'LIVE / UNFILTERED');
+    s.textContent = label;
+    s.className = 'detail-scope ' + (label.includes('PROJECT') ? 'project' : label.includes('RUN') ? 'run' : 'live');
+  }
+}
+function focusDetailPane(){
+  const pane = document.querySelector('.detail-pane');
+  if(!pane) return;
+  if(window.innerWidth <= 860) pane.scrollIntoView({behavior:'smooth', block:'start'});
+  const body = document.getElementById('detail-body');
+  if(body) body.scrollTop = 0;
+}
+function formatAuditItems(items, emptyText){
+  if(!items.length) return `<div class="empty-msg">${escHtml(emptyText)}</div>`;
+  return `<div class="audit-list">${items.map(it=>`<div class="audit-item ${escHtml(it.tone||'')}"><div class="audit-item-head"><span class="audit-item-title">${escHtml(it.title||'event')}</span><span>${escHtml(it.ts ? `${fmtDate(it.ts)} ${fmtTs(it.ts)}` : '')}</span></div>${it.body?`<div class="audit-item-body">${escHtml(it.body)}</div>`:''}</div>`).join('')}</div>`;
+}
+function renderAuditDetail(groups, title, meta){
+  const html = groups.map(g=>`<section class="audit-group"><div class="audit-group-title">${escHtml(g.title)}</div>${formatAuditItems(g.items||[], g.emptyText || 'No entries.')}</section>`).join('');
+  setDetail(title, meta, html || '<div class="empty-msg">No audit detail available.</div>');
+}
+function populateProjectFilter(sessions){
+  const sel = document.getElementById('project-filter');
+  if(!sel) return;
+  const prev = state.selectedProject || sel.value || '';
+  const slugs = [...new Set((sessions||[]).map(sessionSlug).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All projects</option>' + slugs.map(slug => `<option value="${escHtml(slug)}">${escHtml(slug)}</option>`).join('');
+  if(prev && slugs.includes(prev)) sel.value = prev;
+  else sel.value = '';
+}
+function seqFromRunId(runId){ const m=String(runId||'').match(/RUN-\d{8}-(\d+)/); return m ? parseInt(m[1],10) : -1; }
+function sessionSlug(s){ return s.project_slug || s.project || ''; }
+function sessionRunId(s){ return s.runid || s.run_id || ''; }
+function sessionAgent(s){ return s.agenttype || s.agent_type || 'worker'; }
+function sessionTs(s){ return s.ts || s.t_emitted || ''; }
+function normalizeSession(s){
+  if(!s || typeof s !== 'object') return { runid:'', agenttype:'worker', outcome:'running', mutationcount:0, ts:'', project_slug:'' };
+  return {
+    ...s,
+    runid: sessionRunId(s),
+    agenttype: sessionAgent(s),
+    outcome: s.outcome || 'running',
+    mutationcount: s.mutationcount || 0,
+    ts: sessionTs(s),
+    project_slug: sessionSlug(s),
+  };
+}
+function compareSessionsDesc(a,b){
+  const ats = sessionTs(a);
+  const bts = sessionTs(b);
+  if(ats && bts && ats !== bts) return bts.localeCompare(ats);
+  const ar = sessionRunId(a);
+  const br = sessionRunId(b);
+  const ad = ar.slice(4,12);
+  const bd = br.slice(4,12);
+  if(ad && bd && ad !== bd) return bd.localeCompare(ad);
+  return seqFromRunId(br) - seqFromRunId(ar);
+}
+function filteredSessions(){
+  const all = (state.sessions || []).map(normalizeSession);
+  return state.selectedProject ? all.filter(s => sessionSlug(s) === state.selectedProject) : all;
+}
+function selectRun(runId){
+  state.selectedRunId = runId;
+  state.currentDetailMode = 'run';
+  const cached = state.sessionReplays && state.sessionReplays[runId];
+  if(cached){
+    debugLog(`use cached session_replay ${runId}`);
+    if(replayTimer) clearTimeout(replayTimer);
+    replayTimer = null;
+    renderRunDetail(cached);
+    focusDetailPane();
+    render();
+    return;
+  }
+  setDetail(`Audit detail — ${runId}`, 'Loading session replay…', '<div class="loading-msg">Loading session replay…</div>');
+  debugLog(`send session_replay ${runId} (ws=${ws ? ws.readyState : 'null'})`);
+  if(replayTimer) clearTimeout(replayTimer);
+  replayTimer = setTimeout(() => {
+    debugLog(`timeout waiting for session_replay ${runId}`);
+    renderRawDetail(`Audit detail — ${runId}`, 'Replay timed out waiting for session_replay event', { run_id: runId, status: 'timeout' });
+  }, 2500);
+  render();
+  if(ws && ws.readyState === WebSocket.OPEN){ ws.send(JSON.stringify({ type:'session_replay', run_id: runId })); }
+  else debugLog(`ws not open for session_replay ${runId}`);
+}
+function applyProjectFilter(value){
+  state.selectedProject = value || '';
+  state.selectedRunId = '';
+  state.currentDetailMode = state.selectedProject ? 'project' : 'none';
+  render();
+  if(state.selectedProject && ws && ws.readyState === WebSocket.OPEN){ ws.send(JSON.stringify({ type:'project_snapshot', project_slug: state.selectedProject })); }
+  if(!state.selectedProject){ setDetail('Audit detail', 'Select a run or project filter to inspect related audit history.', '<div class="empty-msg">No audit detail selected yet.</div>', 'LIVE / UNFILTERED'); }
+}
+function clearProjectFilter(){ const sel=document.getElementById('project-filter'); if(sel) sel.value=''; applyProjectFilter(''); }
+function handleSessionTableClick(ev){
+  if(ev.target.closest('button[data-open-run]')) return;
+  const row = ev.target.closest('tr[data-runid]');
+  if(!row) return;
+  const rid = row.getAttribute('data-runid') || '';
+  const safeRid = row.getAttribute('data-safe-rid') || '';
+  if(!rid) return;
+  selectRun(rid);
+  if(safeRid) toggleExpand(safeRid);
+}
+function renderScr(scrlast){
+  const bar=document.getElementById('scr-bar');
+  if(!scrlast){ if(bar) bar.classList.remove('visible'); return; }
+  if(bar) bar.classList.add('visible');
+  const p=document.getElementById('scr-pass'), f=document.getElementById('scr-fail'), t=document.getElementById('scr-ts');
+  if(p) p.textContent = (scrlast.passed != null ? scrlast.passed+' passed' : '');
+  if(f) f.textContent = (scrlast.failed ? scrlast.failed+' FAILED' : '');
+  if(t) t.textContent = scrlast.ts ? fmtTs(scrlast.ts) : '';
+}
+function render(data=null){
+  if(data) setConn('live');
+  // V7: update port badge from snapshot bridgeport field
+  const bp = data && (data.bridgeport || data.bridge_port);
+  if(bp){ document.getElementById('port-badge').textContent = 'port '+bp; }
+  // V7: render SCR summary from scrlast / scr_last
+  renderScr(data ? (data.scrlast || data.scr_last || null) : null);
+  if(data && data.sessions) state.sessions = data.sessions || [];
+  if(data && (data.step_times || data.steptimes)) state.stepTimes = data.step_times || data.steptimes || {};
+  if(data && data.session_replays) state.sessionReplays = data.session_replays || {};
+  populateProjectFilter(state.sessions);
+  const sessions=filteredSessions().slice().sort(compareSessionsDesc);
+  const stepTimes=state.stepTimes || {};
+  const body=document.getElementById('sessions-body');
+  if(!sessions.length){ body.innerHTML=`<div class="empty-msg">${state.selectedProject ? 'No sessions for this project.' : 'No sessions recorded yet.'}</div>`; return; }
+  const rows=sessions.map(s=>{
+    const rid=sessionRunId(s); const agent=sessionAgent(s); const outcome=s.outcome||'running'; const muts=s.mutationcount||0; const pct=computeBarPct(s, stepTimes, sessions); const safeRid=rid.replace(/[^a-zA-Z0-9_-]/g,''); const slug=sessionSlug(s); const selected = state.selectedRunId === rid ? ' session-row-selected' : ''; const projectCell = slug ? `<span class="project-badge">${escHtml(slug)}</span>` : '<span style="color:var(--text-faint)">historical / unscoped</span>'; const ridDisplay = rid.replace(/^RUN-/, 'RUN-\u200B'); const prov=provenanceLabel(s); const acct=accountingLabel(s);
+    return `<tr class="${selected}" data-runid="${escHtml(rid)}" data-safe-rid="${escHtml(safeRid)}" title="Click to inspect audit history"><td><div class="run-id-cell">${escHtml(ridDisplay)}</div><div class="step-expand" id="expand-${escHtml(safeRid)}">${buildStepExpand(rid, stepTimes)}</div></td><td><span class="agent-badge agent-${escHtml(agent)}">${escHtml(agent)}</span></td><td>${projectCell}</td><td class="timeline-cell"><div class="bar-wrap"><div class="bar-fill bar-${escHtml(outcome)}" style="width:${pct}%"></div></div></td><td><span class="outcome-cell outcome-${escHtml(outcome)}"><span class="outcome-dot"></span>${escHtml(outcomeLabel(outcome))}</span></td><td><div class="signal-stack">${signalPill(prov.project === 'unknown' ? 'project unknown' : prov.project, sourceTone(prov.project), sourceExplanation(prov.project))}${signalPill(prov.outcome === 'unknown' ? 'outcome source?' : prov.outcome, sourceTone(prov.outcome), sourceExplanation(prov.outcome))}</div></td><td><div class="signal-stack"><span class="mut-badge">${muts} muts</span>${signalPill(acct, acct === 'not recorded' ? 'dim' : 'info', 'model/token/cost accounting recorded for this session')}</div></td><td style="color:var(--text-faint)">${fmtDate(s.ts)} ${fmtTs(s.ts)}</td><td><button class="open-btn" data-open-run="${escHtml(rid)}">Open</button></td></tr>`;
+  }).join('');
+  body.innerHTML=`<table class="sessions-table"><thead><tr><th>RUN-ID</th><th>AGENT</th><th>PROJECT</th><th>TIMELINE</th><th>OUTCOME</th><th>SOURCE</th><th>ACCOUNTING</th><th>TIMESTAMP</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  const tbody = body.querySelector('tbody');
+  if(tbody && !tbody.dataset.boundClicks){
+    tbody.addEventListener('click', handleSessionTableClick);
+    tbody.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button[data-open-run]');
+      if(!btn) return;
+      ev.stopPropagation();
+      const rid = btn.getAttribute('data-open-run') || '';
+      if(rid) selectRun(rid);
+    });
+    tbody.dataset.boundClicks = '1';
+  }
+}
+function renderProjectDetail(payload){
+  const slug = payload.project_slug || state.selectedProject || '(project)';
+  renderAuditDetail([
+    { title:'Project sessions', emptyText:'No recorded sessions for this project.', items:(payload.session_history||[]).map(s => ({ title:s.run_id || 'run', ts:s.ts, body:[s.agent_type, s.outcome].filter(Boolean).join(' · ') })) },
+    { title:'Change log', emptyText:'No project-scoped change history found.', items:(payload.change_log||[]).map(c => ({ title:(c.file || '').split('/').pop() + (c.field ? '#' + c.field : ''), ts:c.ts, body:`${c.old_val || ''} → ${c.new_val || ''}` })) },
+    { title:'Bundle history', emptyText:'No bundle executions found for this project.', items:(payload.bundle_history||[]).map(b => ({ title:b.bundle_name || 'bundle', ts:b.ts, body:[b.run_id, b.ok ? 'success' : 'not-success'].filter(Boolean).join(' · ') })) },
+    { title:'Notifications', emptyText:'No related notifications found.', items:(payload.notifications||[]).map(n => ({ title:[n.priority, n.status].filter(Boolean).join(' · ') || 'notification', ts:n.ts, body:n.message || '' })) },
+  ], `Audit detail — ${slug}`, `Project-scoped history for ${slug}`, 'PROJECT-SCOPED HISTORY');
+  focusDetailPane();
+}
+function factCell(label, value, tone=''){
+  const cls = tone ? ` session-fact ${escHtml(tone)}` : 'session-fact';
+  return `<div class="${cls}"><div class="session-fact-label">${escHtml(label)}</div><div class="session-fact-value">${escHtml(value || '—')}</div></div>`;
+}
+function renderSessionFactGrid(s, payload){
+  const u = sessionUsage(s);
+  const prov = provenanceLabel(s);
+  const stepCount = ((payload && payload.step_history) || []).length;
+  const project = sessionSlug(s) || (payload && payload.project_slug) || 'historical / unscoped';
+  return `<section class="audit-group"><div class="audit-group-title">Session signals</div><div class="session-fact-grid">
+    ${factCell('Outcome', outcomeLabel(s.outcome || (payload && payload.outcome) || 'running'))}
+    ${factCell('Project', project)}
+    ${factCell('Model', s.model || 'not recorded')}
+    ${factCell('Session key', s.session_key || 'not recorded')}
+    ${factCell('Tokens total', fmtTokenCount(u.total) || 'not recorded')}
+    ${factCell('Input / output', u.input || u.output ? `${fmtTokenCount(u.input) || '—'} / ${fmtTokenCount(u.output) || '—'}` : 'not recorded')}
+    ${factCell('Cost', fmtCost(u.cost) || 'not recorded')}
+    ${factCell('Steps seen', String(stepCount || (state.stepTimes[sessionRunId(s)]||[]).length || 0))}
+  </div><div class="session-legend" style="margin-top:8px"><strong>Source meaning:</strong> ${escHtml(prov.text)}. Project/source pills are green when directly stamped by telemetry or close artifacts, amber when reconstructed/inferred, and gray when the engine did not record that field.</div></section>`;
+}
+function stepTone(step){ const key=String(step.step || step.tier || '').toUpperCase(); if(key==='T9') return step.reconstructed ? 'warn' : 'good'; if(key==='T4') return 'info'; if(key==='T8') return 'warn'; return ''; }
+function renderRunDetail(payload){
+  const rid = payload.run_id || state.selectedRunId || '(run)';
+  const merged = mergeSessionPayload(payload);
+  const slug = payload.project_slug || merged.project_slug || 'historical / unscoped';
+  const groups = [
+    { title:'Session summary', emptyText:'No session summary recorded for this run.', items:(payload.summary ? [{ title:'Recorded outcome', ts:(payload.session&&payload.session.ts)||'', body:payload.summary, tone:outcomeTone(payload.outcome) }] : []) },
+    { title:'Step history', emptyText:'No step history recorded for this run.', items:(payload.step_history||[]).map(s => ({ title:[s.step || s.tier || 'step', s.reconstructed ? 'reconstructed' : 'observed'].filter(Boolean).join(' · '), ts:s.ts, body:[s.tier, s.cmd, s.provenance ? `source=${s.provenance}` : ''].filter(Boolean).join(' · '), tone:stepTone(s) })) },
+    { title:'Change log', emptyText:'No change-log entries recorded for this run.', items:(payload.change_log||[]).map(c => ({ title:(c.file || '').split('/').pop() + (c.field ? '#' + c.field : ''), ts:c.ts, body:`${c.old_val || ''} → ${c.new_val || ''}`, tone:'info' })) },
+    { title:'Bundle history', emptyText:'No bundle audit rows recorded for this run.', items:(payload.bundle_history||[]).map(b => ({ title:b.bundle_name || 'bundle', ts:b.ts, body:b.ok ? 'success' : 'not-success', tone:b.ok ? 'good' : 'bad' })) },
+    { title:'Notifications', emptyText:'No notifications fell inside this run window.', items:(payload.notifications||[]).map(n => ({ title:[n.priority, n.status].filter(Boolean).join(' · ') || 'notification', ts:n.ts, body:n.message || '', tone:/critical|high/i.test([n.priority,n.status].join(' ')) ? 'bad' : 'warn' })) },
+  ];
+  const html = renderSessionFactGrid(merged, payload) + groups.map(g=>`<section class="audit-group"><div class="audit-group-title">${escHtml(g.title)}</div>${formatAuditItems(g.items||[], g.emptyText || 'No entries.')}</section>`).join('');
+  setDetail(`Audit detail — ${rid}`, `${slug} · ${outcomeLabel(payload.outcome || merged.outcome || 'completed_no_t9')}${payload.partial ? ' · partial reconstruction' : ''}`, html, 'RUN-SCOPED REPLAY');
+  focusDetailPane();
+}
+function renderRawDetail(title, meta, obj){
+  setDetail(title, meta, `<div class="audit-group"><div class="audit-group-title">Raw payload</div><div class="audit-item"><div class="audit-item-body">${escHtml(JSON.stringify(obj, null, 2))}</div></div></div>`);
+}
+
+let ws=null, reconnectTimer=null, reconnectAttempts=0, authFailedTerminal=false, privilege='none';
+const RECONNECT_BASE_MS=1000, RECONNECT_MAX_MS=10000;
+function scheduleReconnect(reason='retry'){ if(authFailedTerminal || reconnectTimer) return; const delay=Math.min(RECONNECT_BASE_MS*Math.pow(2,reconnectAttempts), RECONNECT_MAX_MS); reconnectAttempts+=1; showMessage(`Reconnecting (${reason}) in ${Math.round(delay/1000)}s...`); reconnectTimer=setTimeout(()=>{ reconnectTimer=null; connect(); }, delay); }
+function connect(){
+  setConn('connecting');
+  showMessage('Connecting to bridge...');
+  ws = new WebSocket(WS_URL);
+  ws.onopen = ()=>{};
+  ws.onmessage = (evt)=>{
+    let msg; try{ msg = JSON.parse(evt.data); }catch(e){ showMessage('Parse error: '+e.message, 'empty-msg'); return; }
+    try {
+      const et = msg.event_type;
+      if(et === 'connect_required'){
+        debugLog('recv connect_required');
+        const token = bootstrapToken || window.__ncBridgeToken || '';
+        ws.send(JSON.stringify({ type:'connect', token }));
+        return;
+      }
+      if(et === 'read_connect_ack' || et === 'connect_ack'){
+        debugLog(`recv ${et} priv=${msg.privilege || 'none'}`);
+        privilege = (msg.privilege || 'ro').toLowerCase();
+        setAuthBadge(privilege);
+        authFailedTerminal = false;
+        reconnectAttempts = 0;
+        setConn('live');
+        return;
+      }
+      if(et === 'project_snapshot'){ debugLog(`recv project_snapshot ${msg.project_slug || ''}`); renderProjectDetail(msg); return; }
+      if(et === 'session_replay'){
+        debugLog(`recv session_replay ${msg.run_id || ''}`);
+        if(replayTimer){ clearTimeout(replayTimer); replayTimer = null; }
+        try {
+          renderRunDetail(msg);
+          focusDetailPane();
+        } catch (e) {
+          renderRawDetail(`Audit detail — ${msg.run_id || state.selectedRunId || '(run)'}`, `Replay received but render failed: ${e.message}`, msg);
+        }
+        return;
+      }
+      if(et === 'audit_tail' && state.currentDetailMode === 'none'){
+        debugLog('recv audit_tail');
+        setDetail('Audit detail', 'Live audit tail', `<section class="audit-group"><div class="audit-group-title">Live audit</div>${formatAuditItems([{ title: msg.type || 'audit', ts: msg.ts, body: msg.line || '' }], 'No live audit entries yet.')}</section>`);
+        return;
+      }
+      if(et === 'auth_failed'){
+        setConn('disconnected');
+        setAuthBadge('none');
+        const code = msg.error_code || '';
+        authFailedTerminal = code !== 'SESSION_TOKEN_EXPIRED';
+        showMessage(msg.output || 'Authentication failed', 'empty-msg');
+        if(code === 'SESSION_TOKEN_EXPIRED' && (bootstrapToken || window.__ncBridgeToken)) scheduleReconnect('session-expired');
+        return;
+      }
+      if(et === 'bridge_shutdown'){
+        debugLog('recv bridge_shutdown');
+        setConn('disconnected');
+        setAuthBadge('none');
+        showMessage('Bridge shutdown received. Waiting to reconnect...', 'loading-msg');
+        try{ ws.close(); }catch{}
+        return;
+      }
+      if(et === 'sessions_snapshot' || msg.sessions){
+        debugLog(`recv sessions_snapshot rows=${(msg.sessions||[]).length}`);
+        render(msg);
+        return;
+      }
+    } catch (e) {
+      debugLog(`handler error: ${e.message}`);
+      renderRawDetail('Sessions page error', `Event handling failed: ${e.message}`, msg);
+    }
+  };
+  ws.onclose = ()=>{ debugLog('socket close'); setConn('disconnected'); setAuthBadge('none'); if(!authFailedTerminal) scheduleReconnect('socket-close'); };
+  ws.onerror = ()=>{ debugLog('socket error'); setConn('disconnected'); showMessage('Could not connect to bridge. Is nightclaw_bridge running?', 'empty-msg'); };
+}
+setAuthBadge('none');
+document.getElementById('project-filter').addEventListener('change', (e)=>applyProjectFilter(e.target.value));
+connect();
+</script>
+</body>
+</html>
