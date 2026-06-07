@@ -5,7 +5,7 @@ protocol: a file-based operating protocol that gives an LLM agent a
 governed, self-improving workspace — persistent memory, audit trail,
 integrity checks, behavioral safety contract, and autonomous project
 management across sessions. The LLM is the CPU. The files are the memory.
-
+Quick Link to Monitor Demo: https://tokenarch.github.io/lanterns/apps/monitor/demo.html
 The codebase, command names, and schema retain the **NightClaw** name
 throughout (`nightclaw_engine/`, `scripts/nightclaw-ops.py`,
 `session:nightclaw-worker`, etc.). "Lanterns" is the public name of this
