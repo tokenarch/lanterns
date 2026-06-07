@@ -51,11 +51,16 @@ architecture, not a product — adopt it as-is, or fork the bundles, prompts,
 schema, and predicates into your own NightClaw-style protocol targeting a
 different runtime.
 
-### Demos (maintainer's site)
+### Demos
 
-Two demos that motivated the design — not product promises, just
-illustrations of the kind of work autonomous NightClaw passes can compound
-toward:
+An interactive demo of the operator monitor, hosted from this repo via
+GitHub Pages (synthetic data — no live engine attached):
+
+- <https://tokenarch.github.io/lanterns/apps/monitor/demo.html>
+
+Plus two demos on the maintainer's site that motivated the design — not
+product promises, just illustrations of the kind of work autonomous
+NightClaw passes can compound toward:
 
 - <https://www.tokenarch.com/cinematic>
 - <https://www.tokenarch.com/nightclaw-demo.html>
