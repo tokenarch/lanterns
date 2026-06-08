@@ -528,28 +528,31 @@
   });
 
   // ── Step highlight logic ──────────────────────────────────────────────────
+  // STEP_NODES — nodes to highlight per T-step.
+  // Each entry maps a step key to the SVG node IDs that should pulse.
+  //
+  //   startup — lock acquire, integrity check, read hardlines + registry
+  //   T0      — checkpoint write to audit-log only
+  //   T1      — dispatch (active-projects); if IDLE → idle-cycle → notifications
+  //   T2      — longrunner-extract; T2.5 six-frame; T2.7 preapproval→approval-chain
+  //   T3      — tool-status check only
+  //   T4      — execute pass — writes project-outputs, audit-log, change-log
+  //   T5      — validate against longrunner criteria; T5.5 quality-standard
+  //   T6      — stop-condition eval; longrunner_update bundle; phase_transition
+  //   T7      — OS improvement — tool/knowledge/failure/lessons/quality/memory
+  //   T8      — manager only — audit-spine, anomaly scan, scr-verify, pruning
+  //   T9      — session_close bundle — session-reg, memory-daily, audit-log
   const STEP_NODES = {
-    // startup: lock acquire, integrity check, read hardlines + registry
     startup: ['ops-py','integrity','check-lock','lock','hardlines','registry'],
-    // T0: checkpoint write to audit-log only
     T0:      ['ops-py','audit-log'],
-    // T1: dispatch (active-projects); if IDLE → idle-cycle → notifications
     T1:      ['ops-py','active-projects','idle-cycle','notifications'],
-    // T2: longrunner-extract; T2.5 six-frame; T2.7 preapproval→approval-chain; escalation→notifications
     T2:      ['ops-py','longrunner','active-projects','notifications','preapproval','approval-chain'],
-    // T3: tool-status check only
     T3:      ['ops-py','tool-status'],
-    // T4: execute pass — writes project-outputs, audit-log, change-log; reads longrunner
     T4:      ['ops-py','longrunner','audit-log','project-outputs','change-log'],
-    // T5: validate against longrunner criteria; T5.5 quality-standard; may write notifications
     T5:      ['ops-py','longrunner','quality-standard','notifications'],
-    // T6: stop-condition eval; longrunner_update bundle; phase_transition → active-projects + notifications
     T6:      ['ops-py','longrunner','active-projects','audit-log','notifications'],
-    // T7: OS improvement — tool/knowledge/failure/lessons/quality/memory writes; t7-dedup gate
     T7:      ['ops-py','failure-modes','lessons','knowledge','tool-status','memory-daily'],
-    // T8: manager only — audit-spine, anomaly scan, scr-verify, notifications pruning, manager-review-reg
     T8:      ['ops-py','audit-log','registry','notifications','manager-review-reg'],
-    // T9: session_close bundle — session-reg, memory-daily, audit-log; release lock
     T9:      ['ops-py','session-reg','memory-daily','lock','audit-log'],
   };
 
