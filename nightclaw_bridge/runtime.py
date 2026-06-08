@@ -196,20 +196,20 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
     separate argv entry. No *args is passed to a shell.
     """
     import sys as _sys
-    # Use relative paths for bash scripts: the subprocess always runs with
-    # cwd=workspace, so "scripts/nightclaw-admin.sh" resolves correctly on
-    # every platform. Absolute Windows paths (backslashes) confuse bash on
-    # Git Bash / MSYS2, producing "No such file or directory" errors because
-    # bash treats backslashes as escape characters rather than path separators.
-    admin_sh = "scripts/nightclaw-admin.sh"
-    ops_py = os.path.join(workspace, "scripts", "nightclaw-ops.py")
-    # Use the running interpreter so ops.py commands work on Windows where
-    # "python3" is not guaranteed to be in PATH.
-    _py = _sys.executable
 
     def _fwd(path: str) -> str:
         """Convert backslashes → forward slashes for bash-consumed paths."""
         return path.replace("\\", "/")
+
+    # Absolute paths with forward slashes: tests assert the prefixed form
+    # (e.g. "/ws/scripts/nightclaw-admin.sh"). _fwd() neutralizes the Windows
+    # backslash issue that previously motivated relative paths — bash on
+    # Git Bash / MSYS2 accepts forward-slash absolute paths cleanly.
+    admin_sh = _fwd(os.path.join(workspace, "scripts", "nightclaw-admin.sh"))
+    ops_py = os.path.join(workspace, "scripts", "nightclaw-ops.py")
+    # Use the running interpreter so ops.py commands work on Windows where
+    # "python3" is not guaranteed to be in PATH.
+    _py = _sys.executable
 
     if cmd == "status":
         return ["bash", admin_sh, "status"]
