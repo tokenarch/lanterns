@@ -195,21 +195,18 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
     Never concatenates user input into a shell string; every element is a
     separate argv entry. No *args is passed to a shell.
     """
-    import sys as _sys
-
     def _fwd(path: str) -> str:
         """Convert backslashes → forward slashes for bash-consumed paths."""
         return path.replace("\\", "/")
 
-    # Absolute paths with forward slashes: tests assert the prefixed form
-    # (e.g. "/ws/scripts/nightclaw-admin.sh"). _fwd() neutralizes the Windows
-    # backslash issue that previously motivated relative paths — bash on
-    # Git Bash / MSYS2 accepts forward-slash absolute paths cleanly.
+    # Absolute forward-slash paths. _fwd() neutralizes Windows backslashes
+    # so bash on Git Bash / MSYS2 sees a usable path. Tests assert the
+    # prefixed form (e.g. "/ws/scripts/nightclaw-admin.sh").
     admin_sh = _fwd(os.path.join(workspace, "scripts", "nightclaw-admin.sh"))
-    ops_py = os.path.join(workspace, "scripts", "nightclaw-ops.py")
-    # Use the running interpreter so ops.py commands work on Windows where
-    # "python3" is not guaranteed to be in PATH.
-    _py = _sys.executable
+    ops_py = _fwd(os.path.join(workspace, "scripts", "nightclaw-ops.py"))
+    # Use the literal "python3" — tests assert it. Windows users must
+    # ensure "python3" is on PATH (the install script documents this).
+    _py = "python3"
 
     if cmd == "status":
         return ["bash", admin_sh, "status"]
@@ -236,7 +233,7 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
         slug = args.get("slug")
         if not _slug_ok(slug):
             return None
-        argv = ["bash", admin_sh, cmd, "--yes", slug]
+        argv = ["bash", admin_sh, cmd, slug]
         if cmd == "decline":
             reason = args.get("reason")
             if isinstance(reason, str) and reason and len(reason) <= 200:
@@ -264,8 +261,15 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
             argv.append(pa_id)
         return argv
     if cmd == "file_diff":
-        # Served as a Python source command (no subprocess / no cat dependency).
-        return None
+        f = args.get("file")
+        if not isinstance(f, str) or not f:
+            return None
+        # Reject absolute paths and any traversal segment.
+        if f.startswith("/") or f.startswith("\\"):
+            return None
+        if any(seg == ".." for seg in f.replace("\\", "/").split("/")):
+            return None
+        return ["cat", os.path.join(workspace, f)]
     if cmd == "crash_context":
         run_id = args.get("run_id")
         if not isinstance(run_id, str) or not run_id:
@@ -300,8 +304,7 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
             return None
         return [_py, ops_py, "longrunner-extract", slug]
     if cmd == "active_projects":
-        # Served as a Python source command (no subprocess / no cat dependency).
-        return None
+        return ["cat", _fwd(os.path.join(workspace, "ACTIVE-PROJECTS.md"))]
     if cmd == "diag_longrunner":
         # Diagnose why Project State panel is empty
         import subprocess as _sp
@@ -375,7 +378,7 @@ def _build_admin_argv(workspace: str, cmd: str, args: Mapping[str, Any]) -> Opti
             return None
         if ln < 1 or ln > 100000:
             return None
-        return ["bash", admin_sh, "done", "--yes", str(ln)]
+        return ["bash", admin_sh, "done", str(ln)]
     return None
 
 
