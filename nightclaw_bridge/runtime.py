@@ -1127,7 +1127,8 @@ def _session_replay_payload(repo, *, workspace: Optional[str],
 
 def _sessions_snapshot_payload(repo, *, bridge_port: int,
                                workspace: Optional[str] = None,
-                               scr_last: Optional[dict] = None) -> dict:
+                               scr_last: Optional[dict] = None,
+                               include_replays: bool = False) -> dict:
     """Build the sessions page payload from the canonical event log.
 
     Shape keys match apps/monitor/nightclaw-sessions.html:
@@ -1241,7 +1242,7 @@ def _sessions_snapshot_payload(repo, *, bridge_port: int,
         sessions.sort(key=lambda r: r.get("ts", ""))
 
     session_replays: dict[str, dict] = {}
-    if workspace:
+    if include_replays and workspace:
         for row in sessions:
             run_id = row.get("runid")
             if not run_id:
@@ -1679,10 +1680,12 @@ class LocalRuntime:
             if token and _hmac.compare_digest(token, expected):
                 return "rw"
             return "ro"
-        # Token-less mode: no auth configured — this is a local-only server.
-        # Grant RW to all connections. Operators who want access control must
-        # set NIGHTCLAW_BRIDGE_TOKEN before starting the runtime.
-        return "rw"
+        # Token-less mode: no auth configured. Safer default per the comment
+        # above ADMIN_CMD_RW — RW commands are refused with a clear error.
+        # Operators who want RW must set NIGHTCLAW_BRIDGE_TOKEN before
+        # starting the runtime. Verified by
+        # tests/test_bridge_runtime.py::test_privilege_for_token_no_config_means_ro_only.
+        return "ro"
 
     async def _ws_handler(self, ws, path: str) -> None:  # pragma: no cover - integration-covered
         endpoint = "/sessions" if path.startswith("/sessions") else "/ws"
