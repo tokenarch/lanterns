@@ -22,7 +22,7 @@
 | `orchestration-os/OPS-PREAPPROVAL.md` | 6a0e63eeb47cec63f163af99c85a82e680ca9a527a8f06f063de4f397486dda6 | 2026-04-24 | computer-signed-2026.4.22 |
 | `orchestration-os/OPS-AUTONOMOUS-SAFETY.md` | 1c22c18624f0d774151b3bdfed6f8145328761d52cca6a32d1430c0f9b1ca37b | 2026-06-04 | computer-signed-2026.4.22 |
 | `orchestration-os/CRON-HARDLINES.md` | e90ec4f7c4b866c15be99e739c6b1e856cedd22fc551f8a51b01731273c2ed80 | 2026-06-04 | computer-signed-2026.4.22 |
-| `orchestration-os/REGISTRY.md` | 4453861f0dda074a3c19a3df4a85aeeb80ab083141d717ddaae6b1e42ccdf4a2 | 2026-06-06 | computer-signed-2026.4.22 |
+| `orchestration-os/REGISTRY.md` | 794b7586dc514818bb71fdd5bbbffe886596495ed232c7fe67fcf5033a091f98 | 2026-06-07 | computer-signed-2026.4.22 |
 
 ---
 

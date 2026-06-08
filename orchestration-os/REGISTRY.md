@@ -270,6 +270,7 @@ apps/monitor/nightclaw-monitor.html           | CODE             | -            
 apps/monitor/nightclaw-sessions.html          | CODE             | -                            | Sessions feed UI; WS /sessions
 apps/monitor/NightClaw-Data-Flow.html         | CODE             | -                            | Data Flow SVG diagram (iframe child of nightclaw-monitor.html); reacts to postMessage {type:'nc-highlight',step,nodes}
 apps/monitor/owner.html                       | CODE             | -                            | Project-owner view; same WS /ws contract + additive RO frame types project_snapshot/session_replay routed by nightclaw_bridge.runtime
+apps/monitor/demo.html                        | CODE             | -                            | Static self-contained demo snapshot of the monitor (no live bridge). Opens directly in a browser.
 orchestration-os/OPS-FAILURE-MODES-ARCHIVE.md | APPEND           | standalone                   | Manager T8 archival only — receives RESOLVED entries moved from OPS-FAILURE-MODES.md. Never delete.
 AGENTS-LESSONS-ARCHIVE.md                     | APPEND           | standalone                   | Manager T8 archival only — receives aged lessons moved from AGENTS-LESSONS.md. Never delete.
 orchestration-os/OPS-TOOL-REGISTRY-ARCHIVE.md | APPEND           | standalone                   | Manager T8 archival only — receives superseded entries from OPS-TOOL-REGISTRY.md. Never delete.

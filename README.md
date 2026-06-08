@@ -11,6 +11,12 @@ throughout (`nightclaw_engine/`, `scripts/nightclaw-ops.py`,
 `session:nightclaw-worker`, etc.). "Lanterns" is the public name of this
 particular build — the one tuned for **Claude Desktop with Cowork mode**.
 
+### ▸ [Live interactive demo](https://tokenarch.github.io/lanterns/apps/monitor/demo.html)
+
+Open the operator monitor in your browser — flip between sessions, see the
+audit trail, watch the historical-replay theme engage. Synthetic data, no
+live engine attached.
+
 **Deployment target:** Claude Desktop with Cowork mode. See
 [`DEPLOY-CLAUDE.md`](DEPLOY-CLAUDE.md) for the step-by-step install.
 

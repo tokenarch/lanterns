@@ -107,11 +107,12 @@ routes:
   - { file: "nightclaw_ops/lifecycle.py",                   tier: CODE,            bundle: "-",                          note: "step() context manager; reads NIGHTCLAW_RUN_ID" }
   - { file: "nightclaw_ops/telemetry.py",                   tier: CODE,            bundle: "-",                          note: "emit_step(); UNIX socket fire-and-forget; never raises" }
 
-  # apps/monitor/ — UI assets (4 files)
+  # apps/monitor/ — UI assets (5 files)
   - { file: "apps/monitor/nightclaw-monitor.html",          tier: CODE,            bundle: "-",                          note: "Unified operator monitor; live event stream + allowlisted admin controls over WS /ws" }
   - { file: "apps/monitor/nightclaw-sessions.html",         tier: CODE,            bundle: "-",                          note: "Sessions feed UI; WS /sessions" }
   - { file: "apps/monitor/NightClaw-Data-Flow.html",        tier: CODE,            bundle: "-",                          note: "Data Flow SVG diagram (iframe child of nightclaw-monitor.html); reacts to postMessage {type:'nc-highlight',step,nodes}" }
   - { file: "apps/monitor/owner.html",                      tier: CODE,            bundle: "-",                          note: "Project-owner view; same WS /ws contract + additive RO frame types project_snapshot/session_replay routed by nightclaw_bridge.runtime" }
+  - { file: "apps/monitor/demo.html",                     tier: CODE,            bundle: "-",                          note: "Static self-contained demo snapshot of the monitor (no live bridge). Opens directly in a browser." }
 
   # OS compounding file archives — manager T8 archival only
   - { file: "orchestration-os/OPS-FAILURE-MODES-ARCHIVE.md", tier: APPEND,          bundle: "standalone",                 note: "Manager T8 archival only — receives RESOLVED entries moved from OPS-FAILURE-MODES.md. Never delete." }
