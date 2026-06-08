@@ -1610,6 +1610,7 @@ class LocalRuntime:
                 "run_id": run_id,
                 "agent_type": payload.get("session") or "worker",
                 "ts": ts,
+                "project_slug": payload.get("slug"),
             }
         _exit_code = payload.get("exit_code")  # None = enter event, int = exit event
         step_ev: dict = {
@@ -1629,6 +1630,7 @@ class LocalRuntime:
                 "event_type": "session_close",
                 "run_id": run_id,
                 "ts": ts,
+                "project_slug": payload.get("slug"),
             }
 
     async def _broadcast(self, main_events: list[dict], sessions_payload: dict) -> None:
