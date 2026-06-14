@@ -160,7 +160,7 @@ done
 echo ""
 echo "--- Unfilled placeholder checks ---"
 PLACEHOLDER_FILES=$(grep -rl '{OWNER}\|{WORKSPACE_ROOT}\|{INSTALL_DATE}\|{DOMAIN_ANCHOR}' \
-    --include="*.md" . 2>/dev/null | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
+    --include="*.md" . 2>/dev/null | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
     | grep -v '^\./tmp/' || true)
 if [[ -n "$PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do

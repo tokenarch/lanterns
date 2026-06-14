@@ -86,17 +86,16 @@ step "1  install.sh — placeholder substitution and initial signing"
 OWNER="smoketestuser"
 WSROOT="$WS"
 
-# install.sh asks 9 prompts in order: OWNER, WORKSPACE_ROOT, CRON_DIR,
-# LOGS_DIR, PLATFORM, y/N confirm, then MODEL_LIGHTWEIGHT / MODEL_STANDARD /
-# MODEL_HEAVY. Feed all 9 newlines (empty for the three model tiers) so
-# install.sh runs to completion without real provider IDs — its built-in
-# defaults keep the {MODEL_LIGHTWEIGHT}/{MODEL_STANDARD}/{MODEL_HEAVY}
-# placeholders in MODEL-TIERS.md intact when input is empty (see
-# scripts/install.sh lines 207-215). This keeps the smoke test safe for CI
-# and template-release validation: no credentials required, placeholders
-# survive, and the rest of the install path (hash generation, REGISTRY
-# restoration, directory creation) still exercises.
-printf "${OWNER}\n${WSROOT}\n${WSROOT}/.cron\n${WSROOT}/.logs\nLinux\ny\n\n\n\n" \
+# install.sh asks 7 prompts in order: OWNER, WORKSPACE_ROOT, PLATFORM, y/N
+# confirm, then MODEL_LIGHTWEIGHT / MODEL_STANDARD / MODEL_HEAVY. Feed all 7
+# newlines (empty for the three model tiers) so install.sh runs to completion
+# without real provider IDs — its built-in defaults keep the
+# {MODEL_LIGHTWEIGHT}/{MODEL_STANDARD}/{MODEL_HEAVY} placeholders in
+# MODEL-TIERS.md intact when input is empty (see scripts/install.sh). This
+# keeps the smoke test safe for CI and template-release validation: no
+# credentials required, placeholders survive, and the rest of the install
+# path (hash generation, REGISTRY restoration, directory creation) exercises.
+printf "${OWNER}\n${WSROOT}\nLinux\ny\n\n\n\n" \
     | bash scripts/install.sh > /tmp/nc-smoke-install.txt 2>&1
 INSTALL_EXIT=$?
 
@@ -114,6 +113,7 @@ fi
 OWNER_REMAINS=$(find . -name "*.md" \
     -not -path "./scripts/*" \
     -not -path "./orchestration-os/REGISTRY.md" \
+    -not -path "./REGISTRY.generated.md" \
     -print0 | xargs -0 grep -l '{OWNER}' 2>/dev/null || true)
 if [[ -n "$OWNER_REMAINS" ]]; then
     fail "install.sh: {OWNER} remained in install-targeted Markdown:"
