@@ -1,0 +1,58 @@
+name: Smoke Test
+
+# Fresh-install smoke test on a NON-git workspace.
+#
+# Why this exists
+# ---------------
+# gates.yml and validate.yml run inside the actions/checkout git tree, so they
+# never exercise the documented "download / unpack contents" install path (no
+# .git present) or the release zip. A change that scopes file discovery to a git
+# work tree (e.g. `git ls-files`) passes those workflows but breaks a real
+# install. This job reproduces the unpacked install: it packages the repo with
+# .git EXCLUDED (mirroring the README smoke-test packaging) and runs
+# scripts/smoke-test.sh, which drives install.sh + validate.sh + new-project.sh
+# in a non-git temp directory and exits non-zero on any failure.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  smoke-test:
+    name: fresh non-git install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ensure packaging tools (zip/unzip)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zip unzip
+
+      - name: Package WITHOUT .git (mirror release zip / unpack-contents install)
+        run: |
+          set -euo pipefail
+          REPO_DIR="$(basename "$GITHUB_WORKSPACE")"
+          cd "$GITHUB_WORKSPACE/.."
+          zip -rq /tmp/nightclaw-smoke.zip "$REPO_DIR" \
+            -x "$REPO_DIR/.git/*" \
+               "$REPO_DIR/**/__pycache__/*" \
+               "$REPO_DIR/**/.pytest_cache/*"
+          # Guard: the package must NOT contain a .git directory, otherwise this
+          # job would silently pass git-only file discovery and defeat its purpose.
+          if unzip -l /tmp/nightclaw-smoke.zip | grep -q "/\.git/"; then
+            echo "ERROR: .git leaked into the smoke package; the non-git path is not being tested." >&2
+            exit 1
+          fi
+
+      - name: Run smoke test (non-git workspace)
+        run: bash scripts/smoke-test.sh /tmp/nightclaw-smoke.zip

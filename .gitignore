@@ -85,3 +85,6 @@ secrets.yaml
 # ── Build artifacts from docs / demos ───────────────────────────────────
 *.log
 node_modules/
+
+# Internal-only - never ship in the public release
+marketing/
