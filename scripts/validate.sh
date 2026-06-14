@@ -159,9 +159,9 @@ done
 # as an example of sign-string format — excluded.
 echo ""
 echo "--- Unfilled placeholder checks ---"
-PLACEHOLDER_FILES=$(grep -rl '{OWNER}\|{WORKSPACE_ROOT}\|{INSTALL_DATE}\|{DOMAIN_ANCHOR}' \
-    --include="*.md" . 2>/dev/null | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
-    | grep -v '^\./tmp/' || true)
+PLACEHOLDER_FILES=$(git ls-files -z -- '*.md' | xargs -0 grep -l '{OWNER}\|{WORKSPACE_ROOT}\|{INSTALL_DATE}\|{DOMAIN_ANCHOR}' 2>/dev/null \
+    | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
+    || true)
 if [[ -n "$PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do
         check_fail "Unfilled placeholder found in $f — run scripts/install.sh to substitute"
@@ -176,8 +176,7 @@ fi
 # install.sh will not replace it and the workspace ships in a dirty state.
 echo ""
 echo "--- Test placeholder leakage checks ---"
-TEST_PLACEHOLDER_FILES=$(grep -rl 'sr-engineer-sim' \
-    --include="*.md" . 2>/dev/null || true)
+TEST_PLACEHOLDER_FILES=$(git ls-files -z -- '*.md' | xargs -0 grep -l 'sr-engineer-sim' 2>/dev/null || true)
 if [[ -n "$TEST_PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do
         check_fail "Legacy test placeholder 'sr-engineer-sim' found in $f — restore {OWNER} before release"

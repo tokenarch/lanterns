@@ -99,14 +99,15 @@ read -rp "Proceed? (y/N): " CONFIRM
 # --- Step 1: Substitute placeholders ---
 info "Substituting placeholders across all .md files..."
 
-# Substitute placeholders in all .md files EXCEPT scripts/ — validate.sh contains
-# placeholder patterns that must not be substituted (they are the search patterns).
-find . -name "*.md" -not -path './scripts/*' -exec sed -i \
+# Substitute placeholders in every tracked .md file. Using git ls-files (rather
+# than find) naturally limits this to the repo's own files — it skips nested
+# worktree checkouts under .claude/worktrees/ (untracked) without needing to
+# name them explicitly.
+git ls-files -z -- '*.md' | xargs -0 sed -i \
     -e "s|{OWNER}|$OWNER|g" \
     -e "s|{WORKSPACE_ROOT}|$WORKSPACE_ROOT|g" \
     -e "s|{PLATFORM}|$PLATFORM|g" \
-    -e "s|{INSTALL_DATE}|$INSTALL_DATE|g" \
-    {} \;
+    -e "s|{INSTALL_DATE}|$INSTALL_DATE|g"
 
 # Also substitute in VERSION file (not .md)
 sed -i \
