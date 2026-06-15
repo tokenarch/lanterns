@@ -225,6 +225,11 @@ pytest (for the test suite — optional but recommended)
 Git Bash (Windows only — required for scripts/nightclaw-admin.sh)
 ```
 
+`install.sh` (Step 3 below) sets up an isolated virtual environment at
+`./venv` and installs `requirements.txt` (PyYAML, pytest, websockets) into
+it automatically — using `uv` if it's on PATH, otherwise the stdlib `venv`
+module + `pip`. No manual `pip install` is needed.
+
 ### Step 1 — Set up the workspace folder
 
 Choose or create the folder on your computer that will be the NightClaw
@@ -269,6 +274,7 @@ Work through these in order, from the workspace root:
    protected file, so no re-sign is needed.
 4. **Verify integrity and validate the workspace:**
    ```bash
+   source venv/bin/activate                     # use the venv install.sh created
    bash scripts/verify-integrity.sh             # must show 11/11 PASS
    bash scripts/validate.sh
    python3 scripts/nightclaw-ops.py schema-lint
