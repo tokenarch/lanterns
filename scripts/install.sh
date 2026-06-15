@@ -5,6 +5,13 @@ set -euo pipefail
 # Automates placeholder substitution and first-sign hash generation.
 # Run from the workspace root after copying NightClaw files.
 
+# --- Content roots ---
+# Directories/globs containing NightClaw's deployable .md content: root-level
+# files plus the audit/, orchestration-os/, PROJECTS/, memory/, and skills/
+# trees. Dev-only trees (.claude/, internal_enhancement/, tests/, venv/, etc.)
+# are intentionally excluded by not listing them here.
+MD_CONTENT_ROOTS=(*.md audit orchestration-os PROJECTS memory skills)
+
 # --- Color output ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -99,9 +106,7 @@ read -rp "Proceed? (y/N): " CONFIRM
 # --- Step 1: Substitute placeholders ---
 info "Substituting placeholders across all .md files..."
 
-# Substitute placeholders in all .md files EXCEPT scripts/ — validate.sh contains
-# placeholder patterns that must not be substituted (they are the search patterns).
-find . -name "*.md" -not -path './scripts/*' -exec sed -i \
+find "${MD_CONTENT_ROOTS[@]}" -name "*.md" -exec sed -i \
     -e "s|{OWNER}|$OWNER|g" \
     -e "s|{WORKSPACE_ROOT}|$WORKSPACE_ROOT|g" \
     -e "s|{PLATFORM}|$PLATFORM|g" \

@@ -5,6 +5,14 @@ set -euo pipefail
 # Checks that all file references, bundle references, and structural assumptions hold.
 # Run from the workspace root.
 
+# --- Content roots ---
+# Directories/globs containing NightClaw's deployable .md content: root-level
+# files plus the audit/, orchestration-os/, PROJECTS/, memory/, and skills/
+# trees. Dev-only trees (.claude/, internal_enhancement/, tests/, venv/, etc.)
+# are intentionally excluded by not listing them here. Keep in sync with
+# install.sh.
+MD_CONTENT_ROOTS=(*.md audit orchestration-os PROJECTS memory skills)
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -160,8 +168,9 @@ done
 echo ""
 echo "--- Unfilled placeholder checks ---"
 PLACEHOLDER_FILES=$(grep -rl '{OWNER}\|{WORKSPACE_ROOT}\|{INSTALL_DATE}\|{DOMAIN_ANCHOR}' \
-    --include="*.md" . 2>/dev/null | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
-    | grep -v '^\./tmp/' || true)
+    --include="*.md" "${MD_CONTENT_ROOTS[@]}" 2>/dev/null \
+    | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
+    || true)
 if [[ -n "$PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do
         check_fail "Unfilled placeholder found in $f — run scripts/install.sh to substitute"
@@ -177,7 +186,7 @@ fi
 echo ""
 echo "--- Test placeholder leakage checks ---"
 TEST_PLACEHOLDER_FILES=$(grep -rl 'sr-engineer-sim' \
-    --include="*.md" . 2>/dev/null || true)
+    --include="*.md" "${MD_CONTENT_ROOTS[@]}" 2>/dev/null || true)
 if [[ -n "$TEST_PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do
         check_fail "Legacy test placeholder 'sr-engineer-sim' found in $f — restore {OWNER} before release"
