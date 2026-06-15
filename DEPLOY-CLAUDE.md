@@ -35,6 +35,11 @@ pytest  (for gate runs — optional but recommended)
 Git Bash (Windows) — required for scripts/nightclaw-admin.sh
 ```
 
+`install.sh` sets up an isolated virtual environment at `./venv` and
+installs `requirements.txt` (PyYAML, pytest, websockets) into it
+automatically — using `uv` if it's on PATH, otherwise the stdlib `venv`
+module + `pip`. No manual `pip install` is needed.
+
 ---
 
 ## Step 1 — Get the Files
@@ -90,6 +95,7 @@ bash scripts/resign.sh USER.md
 ## Step 4 — Verify the Workspace
 
 ```bash
+source venv/bin/activate                # use the venv install.sh created
 bash scripts/verify-integrity.sh        # must show 11/11 PASS
 bash scripts/validate.sh
 python3 scripts/nightclaw-ops.py schema-lint

@@ -27,28 +27,78 @@ validate_input() {
     if [[ "$value" =~ \.\.  ]]; then
         error "$name contains a path traversal sequence (..) which is not allowed"
     fi
-    # Resolve to absolute path and verify it doesn't escape expected boundaries
-    local resolved
-    resolved=$(realpath -m "$value" 2>/dev/null || echo "$value")
-    if [[ "$resolved" != /* ]]; then
-        error "$name must resolve to an absolute path"
+}
+
+# --- Path validation ---
+# Like validate_input, but additionally requires an absolute path. Used for
+# WORKSPACE_ROOT only — avoids `realpath -m`, which is a GNU coreutils
+# extension not available on macOS's BSD realpath.
+validate_path() {
+    local name="$1"
+    local value="$2"
+    validate_input "$name" "$value"
+    if [[ "$value" != /* ]]; then
+        error "$name must be an absolute path (got: $value)"
     fi
 }
 
 # --- Pre-flight: required tools and Python version ---
-for cmd in python3 sed find sha256sum; do
+for cmd in sed find sha256sum; do
     command -v "$cmd" >/dev/null 2>&1 || error "required tool '$cmd' not found in PATH"
 done
 
-# Python 3.10+ is a hard requirement. Ubuntu 22.04 ships 3.10; 24.04 ships 3.12.
-PY_OK=$(python3 -c 'import sys; print("ok" if sys.version_info >= (3,10) else "")' 2>/dev/null || true)
-if [[ "$PY_OK" != "ok" ]]; then
-    PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "unknown")
-    error "Python 3.10+ is required (found $PY_VER). On Ubuntu: 'sudo apt install python3'; see README.md § Install."
+# Portable in-place sed: GNU sed takes `-i` with no argument, BSD/macOS sed
+# requires `-i ''`. Detect by checking for GNU's --version flag.
+if sed --version >/dev/null 2>&1; then
+    SED_INPLACE=(-i)
+else
+    SED_INPLACE=(-i '')
 fi
 
-python3 -c 'import yaml' 2>/dev/null || \
-    warn "PyYAML not importable. Install with: pip install pyyaml  (or: sudo apt install python3-yaml)"
+# Python 3.10+ is a hard requirement. Ubuntu 22.04 ships 3.10; 24.04 ships 3.12.
+# The default `python3` on PATH may be older than 3.10 (or absent) even when a
+# suitable interpreter is installed under a versioned name, so discover all
+# python3.N binaries on PATH (newest first) instead of hardcoding a version list.
+VERSIONED_PYTHONS=$(compgen -c python3. 2>/dev/null | grep -E '^python3\.[0-9]+$' | sort -t. -k2 -rn -u || true)
+PY_CANDIDATES="python3"
+[[ -n "$VERSIONED_PYTHONS" ]] && PY_CANDIDATES="python3 $VERSIONED_PYTHONS"
+
+PY_BIN=""
+for cand in $PY_CANDIDATES; do
+    command -v "$cand" >/dev/null 2>&1 || continue
+    if [[ "$("$cand" -c 'import sys; print("ok" if sys.version_info >= (3,10) else "")' 2>/dev/null)" == "ok" ]]; then
+        PY_BIN="$cand"
+        break
+    fi
+done
+[[ -n "$PY_BIN" ]] || error "Python 3.10+ is required (tried: $PY_CANDIDATES). On Ubuntu: 'sudo apt install python3'; see README.md § Install."
+
+# --- Set up the virtual environment ---
+# Isolates the runtime/test dependencies (PyYAML, pytest, websockets — see
+# requirements.txt) from the system Python. Prefers uv (fast, already used
+# for this repo's own venv/), falling back to the stdlib venv module + pip.
+if command -v uv >/dev/null 2>&1; then
+    if [[ ! -d venv ]]; then
+        info "Creating virtual environment at ./venv (uv, $PY_BIN)..."
+        uv venv venv --python "$PY_BIN" || error "uv venv failed"
+    fi
+    info "Installing dependencies from requirements.txt (uv)..."
+    uv pip install -r requirements.txt --python venv/bin/python || error "uv pip install -r requirements.txt failed"
+else
+    if [[ ! -d venv ]]; then
+        info "Creating virtual environment at ./venv ($PY_BIN)..."
+        "$PY_BIN" -m venv venv || error "$PY_BIN -m venv failed"
+    fi
+    info "Installing dependencies from requirements.txt (pip)..."
+    venv/bin/python -m pip install --upgrade pip -q
+    venv/bin/python -m pip install -r requirements.txt -q || error "pip install -r requirements.txt failed"
+fi
+
+# PYBIN is used for the rest of this script and is the interpreter operators
+# should use afterwards (see "Next steps" at the end).
+PYBIN="venv/bin/python3"
+"$PYBIN" -c 'import yaml' 2>/dev/null || \
+    error "PyYAML still not importable in ./venv after install — check requirements.txt and the pip output above."
 
 # --- Collect values ---
 echo ""
@@ -67,7 +117,7 @@ read -rp "Workspace root path [~/nightclaw-workspace]: " WORKSPACE_ROOT
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$HOME/nightclaw-workspace}"
 # Expand ~ if the user typed it literally; validate_input expects an absolute path.
 WORKSPACE_ROOT="${WORKSPACE_ROOT/#\~/$HOME}"
-validate_input "WORKSPACE_ROOT" "$WORKSPACE_ROOT"
+validate_path "WORKSPACE_ROOT" "$WORKSPACE_ROOT"
 # Warn (non-fatal) if the workspace root we're running in doesn't match the
 # value the user provided. This is a common source of confusion: install.sh
 # must be run FROM the workspace root after copying NightClaw files into it.
@@ -101,7 +151,7 @@ info "Substituting placeholders across all .md files..."
 
 # Substitute placeholders in all .md files EXCEPT scripts/ — validate.sh contains
 # placeholder patterns that must not be substituted (they are the search patterns).
-find . -name "*.md" -not -path './scripts/*' -exec sed -i \
+find . -name "*.md" -not -path './scripts/*' -exec sed "${SED_INPLACE[@]}" \
     -e "s|{OWNER}|$OWNER|g" \
     -e "s|{WORKSPACE_ROOT}|$WORKSPACE_ROOT|g" \
     -e "s|{PLATFORM}|$PLATFORM|g" \
@@ -109,7 +159,7 @@ find . -name "*.md" -not -path './scripts/*' -exec sed -i \
     {} \;
 
 # Also substitute in VERSION file (not .md)
-sed -i \
+sed "${SED_INPLACE[@]}" \
     -e "s|{INSTALL_DATE}|$INSTALL_DATE|g" \
     -e "s|{WORKSPACE_ROOT}|$WORKSPACE_ROOT|g" \
     VERSION 2>/dev/null || true
@@ -123,7 +173,7 @@ info "Placeholders substituted."
 # as a doctrine token. Post-substitution REGISTRY.md therefore diverges from
 # schema-render and breaks tests/core/test_schema_sync.py (R1). Running
 # schema-sync after substitution restores byte-equality before we hash.
-if python3 scripts/nightclaw-ops.py schema-sync >/dev/null 2>&1; then
+if "$PYBIN" scripts/nightclaw-ops.py schema-sync >/dev/null 2>&1; then
     info "REGISTRY.md rendered sections restored from schema."
 else
     warn "schema-sync failed — REGISTRY.md may diverge from schema render."
@@ -155,7 +205,7 @@ for f in "${PROTECTED_FILES[@]}"; do
         # Update the manifest: replace the placeholder line for this file
         # Use Python to update the manifest row; sed pipe-delimiter conflicts make
         # inline sed unreliable here.  Falls back gracefully if the row is not found.
-        python3 -c "
+        "$PYBIN" -c "
 import sys, re, pathlib
 f, h, d, o, m = sys.argv[1:]
 p = pathlib.Path(m)
@@ -203,7 +253,7 @@ read -rp "Heavy model ID      (most capable — e.g. anthropic/claude-opus-4): "
 MODEL_HEAVY="${MODEL_HEAVY:-{MODEL_HEAVY}}"
 
 # Write MODEL-TIERS.md substituting tier values
-sed -i \
+sed "${SED_INPLACE[@]}" \
     -e "s|{MODEL_LIGHTWEIGHT}|${MODEL_LIGHTWEIGHT}|g" \
     -e "s|{MODEL_STANDARD}|${MODEL_STANDARD}|g" \
     -e "s|{MODEL_HEAVY}|${MODEL_HEAVY}|g" \
@@ -218,8 +268,11 @@ info "MODEL-TIERS.md written."
 # --- Done ---
 echo ""
 info "Installation complete."
+info "A Python virtual environment was set up at ./venv with requirements.txt installed."
 echo ""
 echo "Next steps:"
+echo "  0. Activate the virtual environment: source venv/bin/activate"
+echo "     (or prefix python3/pytest commands below with venv/bin/, e.g. venv/bin/python3, venv/bin/pytest)"
 echo "  1. Confirm hashes: bash scripts/verify-integrity.sh  (must show 11/11 PASS)"
 echo "     If any file shows FAIL, re-run: bash scripts/resign.sh <file>"
 echo "  2. Edit SOUL.md — replace {DOMAIN_ANCHOR} with your domain focus (2-3 sentences)"
