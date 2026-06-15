@@ -17,7 +17,28 @@ MD_CONTENT_ROOTS=(*.md audit orchestration-os PROJECTS memory skills)
 # Files that legitimately ship with unfilled {OWNER}/{WORKSPACE_ROOT}/etc.
 # placeholders (install guides, templates, docs showing the substitution
 # format) — excluded from the unfilled-placeholder check below.
-PLACEHOLDER_CHECK_EXCLUDES='INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md'
+PLACEHOLDER_CHECK_EXCLUDE_NAMES=(
+    INSTALL
+    README
+    DEPLOY
+    DEPLOY-CLAUDE
+    CONTRIBUTING
+    LONGRUNNER-TEMPLATE
+    PROJECT-SCHEMA-TEMPLATE
+    OPS-KNOWLEDGE-EXECUTION
+    OPS-CRON-SETUP
+    SECURITY
+    REGISTRY
+    REGISTRY.generated
+)
+PLACEHOLDER_CHECK_EXCLUDES=""
+for name in "${PLACEHOLDER_CHECK_EXCLUDE_NAMES[@]}"; do
+    if [[ -z "$PLACEHOLDER_CHECK_EXCLUDES" ]]; then
+        PLACEHOLDER_CHECK_EXCLUDES="${name}.md"
+    else
+        PLACEHOLDER_CHECK_EXCLUDES="${PLACEHOLDER_CHECK_EXCLUDES}\|${name}.md"
+    fi
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
