@@ -13,6 +13,12 @@ set -euo pipefail
 # install.sh.
 MD_CONTENT_ROOTS=(*.md audit orchestration-os PROJECTS memory skills)
 
+# --- Check 7 exclusions ---
+# Files that legitimately ship with unfilled {OWNER}/{WORKSPACE_ROOT}/etc.
+# placeholders (install guides, templates, docs showing the substitution
+# format) — excluded from the unfilled-placeholder check below.
+PLACEHOLDER_CHECK_EXCLUDES='INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md'
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -169,7 +175,7 @@ echo ""
 echo "--- Unfilled placeholder checks ---"
 PLACEHOLDER_FILES=$(grep -rl '{OWNER}\|{WORKSPACE_ROOT}\|{INSTALL_DATE}\|{DOMAIN_ANCHOR}' \
     --include="*.md" "${MD_CONTENT_ROOTS[@]}" 2>/dev/null \
-    | grep -v 'INSTALL.md\|README.md\|DEPLOY.md\|DEPLOY-CLAUDE.md\|CONTRIBUTING.md\|LONGRUNNER-TEMPLATE.md\|PROJECT-SCHEMA-TEMPLATE.md\|OPS-KNOWLEDGE-EXECUTION.md\|OPS-CRON-SETUP.md\|SECURITY.md\|REGISTRY.md\|REGISTRY.generated.md' \
+    | grep -v "$PLACEHOLDER_CHECK_EXCLUDES" \
     || true)
 if [[ -n "$PLACEHOLDER_FILES" ]]; then
     while IFS= read -r f; do
